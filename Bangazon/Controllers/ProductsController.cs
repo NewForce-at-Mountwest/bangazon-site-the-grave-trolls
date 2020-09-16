@@ -20,9 +20,18 @@ namespace Bangazon.Controllers
         }
 
         // GET: Products
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var applicationDbContext = _context.Product.Include(p => p.ProductType).Include(p => p.User);
+            ViewData["CurrentFilter"] = searchString;
+
+            var applicationDbContext = _context.Product.Include(p => p.ProductType).Include(p => p.User).AsQueryable();
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
+                                       
+            }
+
             return View(await applicationDbContext.ToListAsync());
         }
 
