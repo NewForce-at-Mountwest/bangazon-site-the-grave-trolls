@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Bangazon.Data;
 using Bangazon.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Bangazon.Controllers
 {
@@ -14,8 +15,13 @@ namespace Bangazon.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public PaymentTypesController(ApplicationDbContext context)
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
+
+        public PaymentTypesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
+            _userManager = userManager;
             _context = context;
         }
 
@@ -23,7 +29,18 @@ namespace Bangazon.Controllers
         public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.PaymentType.Include(p => p.User);
-            return View(await applicationDbContext.ToListAsync());
+
+            var user = await GetCurrentUserAsync();
+
+            var userCheck = await _context.PaymentType.Where(p => p.UserId == user.Id).ToListAsync();
+
+            if (userCheck.Count() < 1)
+            {
+
+                return View("NoPaymentTypes");
+            }
+
+            return View(userCheck);
         }
 
         // GET: PaymentTypes/Details/5
