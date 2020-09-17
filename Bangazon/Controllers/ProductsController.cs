@@ -127,7 +127,7 @@ namespace Bangazon.Controllers
                     //Adds the product to the order and returns us to the Index view
                     _context.Add(newProductOnOrder);
                     await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction("Details", "Orders");
                 }
             }
 
