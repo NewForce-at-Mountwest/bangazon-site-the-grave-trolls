@@ -34,8 +34,14 @@ namespace Bangazon.Controllers
             {
                 // return the results that contain what the user typed in
                 applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
-                                       
+
             }
+            if(applicationDbContext.Count()< 1 )
+            {
+                
+                return View("SearchError");
+            }
+          
 
             return View(await applicationDbContext.ToListAsync());
         }
