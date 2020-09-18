@@ -2,38 +2,31 @@
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<ApplicationUser> SignInManager
 
-@{
-    ViewData["Title"] = "Details";
-}
+@{ ViewData["Title"] = "Details"; }
 
 <h1>Details</h1>
 
 <div>
     <h4>@Html.DisplayFor(model => model.Title)</h4>
     <hr />
-    @{
-        //if there are any products left, the user will be given a button to add to cart
+    @{ //if there are any products left, the user will be given a button to add to cart
         if (Model.Quantity > 0)
         {
             //The "add to cart" button is only shown if the user is logged in
             if (SignInManager.IsSignedIn(User))
             {
-                <a asp-action="AddToCart" asp-route-id="@Model.ProductId"><button class="btn btn-primary">Add to Cart</button></a>
-                <hr />
+<a asp-action="AddToCart" asp-route-id="@Model.ProductId"><button class="btn btn-primary">Add to Cart</button></a>
+                    <hr /> }
+                //otherwise the user is asked to login
+                else
+                {
+<div>Please <a asp-area="Identity" asp-page="/Account/Login">login</a> to add this item to your cart!</div>
+                    <hr /> }
             }
-            //otherwise the user is asked to login
             else
             {
-                <div>Please <a asp-area="Identity" asp-page="/Account/Login">login</a> to add this item to your cart!</div>
-                <hr />
-            }
-        }
-        else
-        {
-            <div>This product is out of stock!</div>
-            <hr />
-        }
-    }
+<div>This product is out of stock!</div>
+                <hr /> } }
     <dl class="row">
 
         <dt class="col-sm-2">
@@ -59,6 +52,12 @@
         </dt>
         <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Quantity)
+        </dd>
+        <dt class="col-sm-2">
+            Local delivery
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.isLocal)
         </dd>
         <dt class="col-sm-2">
             Seller
