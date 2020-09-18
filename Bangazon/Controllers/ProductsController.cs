@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Bangazon.Data;
+using Bangazon.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Bangazon.Data;
-using Bangazon.Models;
-using Microsoft.AspNetCore.Identity;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Bangazon.Controllers
 {
@@ -42,12 +41,12 @@ namespace Bangazon.Controllers
                 applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
 
             }
-            if(applicationDbContext.Count()< 1 )
+            if (applicationDbContext.Count() < 1)
             {
-                
+
                 return View("SearchError");
             }
-          
+
 
             return View(await applicationDbContext.ToListAsync());
         }
@@ -150,11 +149,17 @@ namespace Bangazon.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId")] Product product)
         {
+            ModelState.Remove("User");
+            ModelState.Remove("UserId");
             if (ModelState.IsValid)
             {
+                var user = await GetCurrentUserAsync();
+                product.UserId = user.Id;
                 _context.Add(product);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                //Redirect to Details
+                //return RedirectToAction(nameof(Index));
+                return RedirectToAction("Details", "Products", new { id = product.ProductId });
             }
             ViewData["ProductTypeId"] = new SelectList(_context.ProductType, "ProductTypeId", "Label", product.ProductTypeId);
             ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", product.UserId);
