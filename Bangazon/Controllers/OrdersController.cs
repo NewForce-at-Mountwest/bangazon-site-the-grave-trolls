@@ -9,6 +9,7 @@ using Bangazon.Data;
 using Bangazon.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Bangazon.Models.OrderViewModels;
 
 namespace Bangazon.Controllers
 {
@@ -126,14 +127,31 @@ namespace Bangazon.Controllers
                 return NotFound();
             }
 
-            var order = await _context.Order.FindAsync(id);
+            //Gets the current user
+            ApplicationUser currentUser = await GetCurrentUserAsync();
+
+            var order = await _context.Order
+                                .Include(o => o.PaymentType)
+                                .Include(o => o.User)
+                                .Include(o => o.OrderProducts)
+                                    .ThenInclude(op => op.Product)
+                                .Where(o => o.UserId == currentUser.Id)
+                                .FirstOrDefaultAsync(m => m.OrderId == id);
             if (order == null)
             {
                 return NotFound();
             }
-            ViewData["PaymentTypeId"] = new SelectList(_context.PaymentType, "PaymentTypeId", "AccountNumber", order.PaymentTypeId);
-            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", order.UserId);
-            return View(order);
+
+            OrderEditViewModel model = new OrderEditViewModel();
+            model.Order = order;
+
+            List<PaymentType> paymentTypes = await _context.PaymentType
+                                                .Where(pt => pt.UserId == currentUser.Id && pt.Active == true)
+                                                .ToListAsync();
+
+            model.PaymentTypes = new SelectList(paymentTypes, "Id", "Description", order.PaymentTypeId).ToList();
+
+            return View(model);
         }
 
         // POST: Orders/Edit/5
