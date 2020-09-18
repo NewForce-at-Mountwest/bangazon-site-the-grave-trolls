@@ -34,12 +34,15 @@ namespace Bangazon.Controllers
 
             var userCheck = await _context.PaymentType.Where(p => p.UserId == user.Id).ToListAsync();
 
+            // if there are 0 payment types assocated with the user
             if (userCheck.Count() < 1)
             {
-
+                //if the user has no payment types associated with them redirect to a page that tells them that
+                //and gives them an option to create a payment type
                 return View("NoPaymentTypes");
             }
 
+            //returns a view that hass all payment types associated with the user
             return View(userCheck);
         }
 
@@ -76,10 +79,22 @@ namespace Bangazon.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("PaymentTypeId,DateCreated,Description,AccountNumber,UserId,Active")] PaymentType paymentType)
         {
+
+            //removes the user and userid so the model state doesnt think that the information is invalid
+            ModelState.Remove("User");
+            ModelState.Remove("UserId");
+            //checks to for all the information in the model state
             if (ModelState.IsValid)
             {
+                //gets the current user
+                var user = await GetCurrentUserAsync();
+                //grabs the current user's id
+                paymentType.UserId = user.Id;
+                //adds all the user and paymentType information into context
                 _context.Add(paymentType);
+                //saves the changes
                 await _context.SaveChangesAsync();
+                //redirects back to all the payment types
                 return RedirectToAction(nameof(Index));
             }
             ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", paymentType.UserId);
