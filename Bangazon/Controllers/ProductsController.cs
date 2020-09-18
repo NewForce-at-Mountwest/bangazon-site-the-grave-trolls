@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Bangazon.Data;
+using Bangazon.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Bangazon.Data;
-using Bangazon.Models;
-using Microsoft.AspNetCore.Identity;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Bangazon.Controllers
 {
@@ -42,12 +41,12 @@ namespace Bangazon.Controllers
                 applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
 
             }
-            if(applicationDbContext.Count()< 1 )
+            if (applicationDbContext.Count() < 1)
             {
-                
+
                 return View("SearchError");
             }
-          
+
 
             return View(await applicationDbContext.ToListAsync());
         }
@@ -148,7 +147,7 @@ namespace Bangazon.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId")] Product product)
+        public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId,isLocal")] Product product)
         {
             if (ModelState.IsValid)
             {
