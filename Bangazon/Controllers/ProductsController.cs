@@ -1,12 +1,13 @@
-﻿using Bangazon.Data;
-using Bangazon.Models;
-using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using Bangazon.Data;
+using Bangazon.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Bangazon.Controllers
 {
@@ -41,12 +42,12 @@ namespace Bangazon.Controllers
                 applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
 
             }
-            if (applicationDbContext.Count() < 1)
+            if(applicationDbContext.Count()< 1 )
             {
-
+                
                 return View("SearchError");
             }
-
+          
 
             return View(await applicationDbContext.ToListAsync());
         }
@@ -126,7 +127,7 @@ namespace Bangazon.Controllers
                     //Adds the product to the order and returns us to the Index view
                     _context.Add(newProductOnOrder);
                     await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction("Details", "Orders");
                 }
             }
 
@@ -149,17 +150,11 @@ namespace Bangazon.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId")] Product product)
         {
-            ModelState.Remove("User");
-            ModelState.Remove("UserId");
             if (ModelState.IsValid)
             {
-                var user = await GetCurrentUserAsync();
-                product.UserId = user.Id;
                 _context.Add(product);
                 await _context.SaveChangesAsync();
-                //Redirect to Details
-                //return RedirectToAction(nameof(Index));
-                return RedirectToAction("Details", "Products", new { id = product.ProductId });
+                return RedirectToAction(nameof(Index));
             }
             ViewData["ProductTypeId"] = new SelectList(_context.ProductType, "ProductTypeId", "Label", product.ProductTypeId);
             ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", product.UserId);
