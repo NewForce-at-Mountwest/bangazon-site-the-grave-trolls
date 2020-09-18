@@ -1,0 +1,68 @@
+﻿@model Bangazon.Models.Order
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+    <div>
+        @if (Model.PaymentTypeId == null)
+        {
+            <h1>Shopping Cart</h1>
+        }
+        else
+        {
+            <h1>Order from @Html.DisplayFor(model => model.DateCompleted)</h1>
+        }
+        <dl class="row">
+            @if (Model.PaymentTypeId != null)
+            {
+                <hr />
+                <h4>Payment Details</h4>
+                <dt class="col-sm-2">
+                    Order completed on
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.DateCompleted)
+                </dd>
+                <dt class="col-sm-2">
+                    Payment Number
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.PaymentType.AccountNumber)
+                </dd>
+            }
+        </dl>
+        @if (Model.PaymentTypeId == null)
+        {
+            <h4>Products in Cart:</h4>
+        }
+        else
+        {
+            <h4>Products in Order:</h4>
+        }
+        <hr />
+        @{
+            double TotalPrice = 0;
+        foreach (var OrderProduct in Model.OrderProducts)
+        {
+            <dl class="row">
+                <dd class="col-sm-2">
+                    <a asp-action="Details" asp-route-id="@OrderProduct.ProductId">@Html.DisplayFor(model => OrderProduct.Product.Title)</a>
+                </dd>
+                <dt class="col-sm-10">
+                    @Html.DisplayFor(model => OrderProduct.Product.Price)
+                </dt>
+                @{
+                    TotalPrice += OrderProduct.Product.Price;
+                }
+            </dl>
+        }
+        <h4>Total Price: @TotalPrice.ToString("C2")</h4>
+        }
+    </div>
+<div>
+    @if (Model.PaymentTypeId == null)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.OrderId"><button class="btn btn-primary"><h4>Checkout</h4></button></a>
+    }
+</div>
