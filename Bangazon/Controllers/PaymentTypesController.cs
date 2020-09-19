@@ -20,10 +20,8 @@ namespace Bangazon.Controllers
 
         private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
-        public interface IIsDeleted
-{
-    bool IsDeleted { get; set; }
-}
+       
+
 
         public PaymentTypesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
@@ -33,24 +31,29 @@ namespace Bangazon.Controllers
 
         // GET: PaymentTypes
         [Authorize]
+        //constructor type of paymenttype
         public async Task<IActionResult> Index(PaymentType PaymentType)
         {
             var applicationDbContext = _context.PaymentType.Include(p => p.User);
 
             var user = await GetCurrentUserAsync();
 
-            var userCheck = await _context.PaymentType.Where(p => p.UserId == user.Id).ToListAsync();
+            //gets all payment types associated with the user and has and active status of true
+            //returns that information to a list
+            var userCheck = await _context.PaymentType.Where(p => p.UserId == user.Id && p.Active == true).ToListAsync();
 
             // if there are 0 payment types assocated with the user
-            if (userCheck.Count() < 1 || PaymentType.Active == false)
+            // or if their or no active payment types
+            if (userCheck.Count() < 1 )
             {
-                //if the user has no payment types associated with them redirect to a page that tells them that
+                //redirect to a page that tells them 
                 //and gives them an option to create a payment type
                 return View("NoPaymentTypes");
             }
 
-            //returns a view that hass all payment types associated with the user
             return View(userCheck);
+                //returns a view that hass all payment types associated with the user
+               
         }
 
         // GET: PaymentTypes/Details/5
@@ -98,7 +101,7 @@ namespace Bangazon.Controllers
                 var user = await GetCurrentUserAsync();
                 //grabs the current user's id
                 paymentType.UserId = user.Id;
-                //sets the active status to true
+                //sets the active status to true anytime a new payment type is created
                 paymentType.Active = true;
                 //adds all the user and paymentType information into context
                 _context.Add(paymentType);
