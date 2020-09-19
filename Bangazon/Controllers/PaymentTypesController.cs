@@ -20,6 +20,11 @@ namespace Bangazon.Controllers
 
         private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
+        public interface IIsDeleted
+{
+    bool IsDeleted { get; set; }
+}
+
         public PaymentTypesController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _userManager = userManager;
@@ -28,7 +33,7 @@ namespace Bangazon.Controllers
 
         // GET: PaymentTypes
         [Authorize]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(PaymentType PaymentType)
         {
             var applicationDbContext = _context.PaymentType.Include(p => p.User);
 
@@ -37,7 +42,7 @@ namespace Bangazon.Controllers
             var userCheck = await _context.PaymentType.Where(p => p.UserId == user.Id).ToListAsync();
 
             // if there are 0 payment types assocated with the user
-            if (userCheck.Count() < 1)
+            if (userCheck.Count() < 1 || PaymentType.Active == false)
             {
                 //if the user has no payment types associated with them redirect to a page that tells them that
                 //and gives them an option to create a payment type
@@ -93,6 +98,8 @@ namespace Bangazon.Controllers
                 var user = await GetCurrentUserAsync();
                 //grabs the current user's id
                 paymentType.UserId = user.Id;
+                //sets the active status to true
+                paymentType.Active = true;
                 //adds all the user and paymentType information into context
                 _context.Add(paymentType);
                 //saves the changes
@@ -181,9 +188,19 @@ namespace Bangazon.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var paymentType = await _context.PaymentType.FindAsync(id);
-            _context.PaymentType.Remove(paymentType);
-            await _context.SaveChangesAsync();
+            PaymentType paymentType = await _context.PaymentType.FindAsync(id);
+            try
+            {
+               
+                _context.PaymentType.Remove(paymentType);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception) when (paymentType.Active == true)
+            {
+                paymentType.Active = false;
+                _context.Update(paymentType);
+                await _context.SaveChangesAsync();
+            }
             return RedirectToAction(nameof(Index));
         }
 
