@@ -38,8 +38,7 @@ namespace Bangazon.Controllers
             if (!String.IsNullOrEmpty(searchString))
             {
                 // return the results that contain what the user typed in
-                applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
-
+                applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString) || p.City.Contains(searchString));
             }
             if (applicationDbContext.Count() < 1)
             {
