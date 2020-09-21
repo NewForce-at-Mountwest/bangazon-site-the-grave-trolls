@@ -141,6 +141,7 @@ namespace Bangazon.Controllers
                                 .Include(o => o.OrderProducts)
                                     .ThenInclude(op => op.Product)
                                 .Where(o => o.UserId == currentUser.Id)
+                                .Where(o => o.PaymentTypeId == null)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
             //If the order doesn't exist, returns a Not Found page
@@ -278,6 +279,7 @@ namespace Bangazon.Controllers
                                 .Include(o => o.OrderProducts)
                                     .ThenInclude(op => op.Product)
                                 .Where(o => o.UserId == currentUser.Id)
+                                .Where(o => o.PaymentTypeId == null)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
                 model.Order = order;
@@ -305,6 +307,7 @@ namespace Bangazon.Controllers
                                 .Include(o => o.OrderProducts)
                                     .ThenInclude(op => op.Product)
                                 .Where(o => o.UserId == currentUser.Id)
+                                .Where(o => o.PaymentTypeId == null)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
             model.Order = failedOrder;
