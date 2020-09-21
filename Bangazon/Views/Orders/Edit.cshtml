@@ -27,7 +27,7 @@
     //If the user has no payment types active on their account, prompts them to add one
     if (Model.PaymentTypes.Count() == 0)
     {
-        <h4> You have no payment types! Please <a asp-controller="PaymentTypes" asp-action="Create">add one here</a> to continue!</h4>
+        <p> You have no payment types! Please <a asp-controller="PaymentTypes" asp-action="Create">add one here</a> to continue!</p>
     }
     //Prints out the dropdown for payment types IF the user has an active payment type
     else

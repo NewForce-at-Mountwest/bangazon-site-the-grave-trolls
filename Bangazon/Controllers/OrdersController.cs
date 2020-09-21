@@ -189,6 +189,9 @@ namespace Bangazon.Controllers
             ModelState.Remove("Order.PaymentType");
             ModelState.Remove("Order.User");
 
+            //Creates a new View Model for our next view. It will hold the order, select list items of payment types, and a list of out of stock products that were removed from the order
+            OrderEditViewModel newModel = new OrderEditViewModel();
+
             //Fetches a list of all products in the order that we can loop through
             List<OrderProduct> productsInOrder = await _context.OrderProduct
                                                             .Include(op => op.Product)
@@ -279,10 +282,9 @@ namespace Bangazon.Controllers
                                 .Include(o => o.OrderProducts)
                                     .ThenInclude(op => op.Product)
                                 .Where(o => o.UserId == currentUser.Id)
-                                .Where(o => o.PaymentTypeId == null)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
-                model.Order = order;
+                newModel.Order = order;
 
                 //...Then we get all the PaymentTypes again, just to fill out the PaymentType...
                 List<PaymentType> paymentTypes = await _context.PaymentType
@@ -292,11 +294,11 @@ namespace Bangazon.Controllers
                 //...and turn them into SelectListItems
                 if (paymentTypes != null)
                 {
-                    model.PaymentTypes = new SelectList(paymentTypes, "PaymentTypeId", "Description", model.Order.PaymentTypeId).ToList();
+                    newModel.PaymentTypes = new SelectList(paymentTypes, "PaymentTypeId", "Description", newModel.Order.PaymentTypeId).ToList();
                 }
 
                 //Sends us to our CheckedOut view
-                return View("CheckedOut", model);
+                return View("CheckedOut", newModel);
             }
 
             //This all refreshes the ViewModel so we can refresh the page if checking out FAILS
@@ -310,7 +312,7 @@ namespace Bangazon.Controllers
                                 .Where(o => o.PaymentTypeId == null)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
-            model.Order = failedOrder;
+            newModel.Order = failedOrder;
 
             List<PaymentType> failedPaymentTypes = await _context.PaymentType
                                                 .Where(pt => pt.UserId == currentUser.Id && pt.Active == true)
@@ -318,11 +320,11 @@ namespace Bangazon.Controllers
 
             if (failedPaymentTypes != null)
             {
-                model.PaymentTypes = new SelectList(failedPaymentTypes, "PaymentTypeId", "Description", model.Order.PaymentTypeId).ToList();
+                newModel.PaymentTypes = new SelectList(failedPaymentTypes, "PaymentTypeId", "Description", newModel.Order.PaymentTypeId).ToList();
             }
 
             //Refreshes the page with the same ViewModel if checking out fails
-            return View(model);
+            return View(newModel);
         }
 
         // GET: Orders/Delete/5
