@@ -31,6 +31,6 @@ namespace Bangazon.Models
     public ApplicationUser User { get; set; }
 
     public ICollection<Order> Orders { get; set; }
-        public bool Active { get; set; }
+    public bool Active { get; set; }
     }
 }
