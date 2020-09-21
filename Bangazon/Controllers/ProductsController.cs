@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Bangazon.Data;
+using Bangazon.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Bangazon.Data;
-using Bangazon.Models;
-using Microsoft.AspNetCore.Identity;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Bangazon.Controllers
 {
@@ -39,15 +38,14 @@ namespace Bangazon.Controllers
             if (!String.IsNullOrEmpty(searchString))
             {
                 // return the results that contain what the user typed in
-                applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString));
-
+                applicationDbContext = applicationDbContext.Where(p => p.Title.Contains(searchString) || p.City.Contains(searchString));
             }
-            if(applicationDbContext.Count()< 1 )
+            if (applicationDbContext.Count() < 1)
             {
-                
+
                 return View("SearchError");
             }
-          
+
 
             return View(await applicationDbContext.ToListAsync());
         }
@@ -148,7 +146,7 @@ namespace Bangazon.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId")] Product product)
+        public async Task<IActionResult> Create([Bind("ProductId,DateCreated,Description,Title,Price,Quantity,UserId,City,ImagePath,Active,ProductTypeId,isLocal")] Product product)
         {
             ModelState.Remove("User");
             ModelState.Remove("UserId");
@@ -158,8 +156,6 @@ namespace Bangazon.Controllers
                 product.UserId = user.Id;
                 _context.Add(product);
                 await _context.SaveChangesAsync();
-                //Redirect to Details
-                //return RedirectToAction(nameof(Index));
                 return RedirectToAction("Details", "Products", new { id = product.ProductId });
             }
             ViewData["ProductTypeId"] = new SelectList(_context.ProductType, "ProductTypeId", "Label", product.ProductTypeId);
