@@ -25,7 +25,7 @@
     }
     <h4>Total Price: @TotalPrice.ToString("C2")</h4>
     //If the user has no payment types active on their account, prompts them to add one
-    if (Model.PaymentTypes == null)
+    if (Model.PaymentTypes.Count() == 0)
     {
         <h4> You have no payment types! Please <a asp-controller="PaymentTypes" asp-action="Create">add one here</a> to continue!</h4>
     }
