@@ -32,7 +32,7 @@ namespace Bangazon.Controllers
         // GET: PaymentTypes
         [Authorize]
         //constructor type of paymenttype
-        public async Task<IActionResult> Index(PaymentType PaymentType)
+        public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.PaymentType.Include(p => p.User);
 
@@ -190,20 +190,31 @@ namespace Bangazon.Controllers
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
-        {
+        {   
+            //gets the payment type by id
             PaymentType paymentType = await _context.PaymentType.FindAsync(id);
+
+            
             try
             {
-               
+               //it first tries to remove the payment type from the data base
                 _context.PaymentType.Remove(paymentType);
+                //then save the changes
                 await _context.SaveChangesAsync();
             }
+            // if the payment type is associated with an order
+            // this catches the exception when it's active
             catch (Exception) when (paymentType.Active == true)
             {
+                //changes the active status to false
                 paymentType.Active = false;
+                //updates the payment type since it cant be deleted
                 _context.Update(paymentType);
+                //saves the changes
                 await _context.SaveChangesAsync();
             }
+
+            // redirects back to the view of all payment types
             return RedirectToAction(nameof(Index));
         }
 
