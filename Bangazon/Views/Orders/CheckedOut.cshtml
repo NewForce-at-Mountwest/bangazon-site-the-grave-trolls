@@ -1,0 +1,53 @@
+﻿@model Bangazon.Models.OrderViewModels.OrderEditViewModel
+<div>
+    @{
+        //If we tried to check out with ONLY products that are out of stock, this will tell us that all the products are removed
+        if (Model.Order.OrderProducts.Count() == 0)
+        {
+            <h1>Sorry!</h1>
+            <hr />
+            <h4>The items in your cart are now out of stock.</h4>
+        }
+        //Runs if this page is called while we still have stuff attached to the order
+        else
+        {
+            <div>
+                <h1>Your order was placed!</h1>
+                @*Prints out the products that were successfully ordered, after all out-of-stock items were removed*@
+                <h2>Products Ordered:</h2>
+                @{
+                    double TotalPrice = 0;
+                    foreach (var OrderProduct in Model.Order.OrderProducts)
+                    {
+                        <dl class="row">
+                            <dd class="col-sm-2">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@OrderProduct.ProductId">@Html.DisplayFor(model => OrderProduct.Product.Title)</a>
+                            </dd>
+                            <dt class="col-sm-10">
+                                @Html.DisplayFor(model => OrderProduct.Product.Price)
+                            </dt>
+                            @{
+                                TotalPrice += OrderProduct.Product.Price;
+                            }
+                        </dl>
+                    }
+                    <h4>Total Price: @TotalPrice.ToString("C2")</h4>
+                }
+            </div>
+        }
+        @*If any products were removed from the cart, we want to let the user know and list them all out!*@
+        if (Model.outOfStockProducts.Count() > 0)
+        {
+            <hr />
+            <h4>The following items were out of stock, and therefore removed from your order: </h4>
+            foreach (var OrderProduct in Model.outOfStockProducts)
+            {
+                <dl class="row">
+                    <dd class="col-sm-2">
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@OrderProduct.Product.ProductId">@Html.DisplayFor(model => OrderProduct.Product.Title)</a>
+                    </dd>
+                </dl>
+            }
+        }
+    }
+</div>
