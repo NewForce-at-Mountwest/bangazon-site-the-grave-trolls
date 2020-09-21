@@ -1,43 +1,58 @@
-﻿@model Bangazon.Models.Order
+﻿@model Bangazon.Models.OrderViewModels.OrderEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit</h1>
-
-<h4>Order</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="OrderId" />
-            <div class="form-group">
-                <label asp-for="DateCompleted" class="control-label"></label>
-                <input asp-for="DateCompleted" class="form-control" />
-                <span asp-validation-for="DateCompleted" class="text-danger"></span>
+@*This view is named Edit, but it's solely used to select a Payment Type for checkout. On the backend though, it technically is editing our order*@
+<h1>Checkout</h1>
+@{
+    //Loops through, prints every product in our order, and keeps track of the total price
+    double TotalPrice = 0;
+    foreach (var OrderProduct in Model.Order.OrderProducts)
+    {
+        <dl class="row">
+            <dd class="col-sm-2">
+                <a asp-action="Details" asp-route-id="@OrderProduct.ProductId">@Html.DisplayFor(model => OrderProduct.Product.Title)</a>
+            </dd>
+            <dt class="col-sm-10">
+                @Html.DisplayFor(model => OrderProduct.Product.Price)
+            </dt>
+            @{
+                TotalPrice += OrderProduct.Product.Price;
+            }
+        </dl>
+    }
+    <h4>Total Price: @TotalPrice.ToString("C2")</h4>
+    //If the user has no payment types active on their account, prompts them to add one
+    if (Model.PaymentTypes.Count() == 0)
+    {
+        <p> You have no payment types! Please <a asp-controller="PaymentTypes" asp-action="Create">add one here</a> to continue!</p>
+    }
+    //Prints out the dropdown for payment types IF the user has an active payment type
+    else
+    {
+        <div class="row">
+            <div class="col-md-4">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Order.OrderId" />
+                    <input type="hidden" asp-for="Order.DateCreated" />
+                    <input type="hidden" asp-for="Order.DateCompleted" />
+                    <input type="hidden" asp-for="Order.UserId" />
+                    <div class="form-group">
+                        <label asp-for="Order.PaymentTypeId" class="control-label">Select your payment for this order: </label>
+                        <select asp-for="Order.PaymentTypeId" class="form-control" asp-items="Model.PaymentTypes"></select>
+                        <span asp-validation-for="Order.PaymentTypeId" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <input type="submit" value="Save" class="btn btn-primary" />
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
-                <span asp-validation-for="UserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="PaymentTypeId" class="control-label"></label>
-                <select asp-for="PaymentTypeId" class="form-control" asp-items="ViewBag.PaymentTypeId"></select>
-                <span asp-validation-for="PaymentTypeId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+        </div>
+    }
+}
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
