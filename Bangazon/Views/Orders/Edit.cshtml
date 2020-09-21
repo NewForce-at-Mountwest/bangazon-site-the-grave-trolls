@@ -4,10 +4,10 @@
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit</h1>
-<h4>Checkout</h4>
-<hr />
+@*This view is named Edit, but it's solely used to select a Payment Type for checkout. On the backend though, it technically is editing our order*@
+<h1>Checkout</h1>
 @{
+    //Loops through, prints every product in our order, and keeps track of the total price
     double TotalPrice = 0;
     foreach (var OrderProduct in Model.Order.OrderProducts)
     {
@@ -24,10 +24,12 @@
         </dl>
     }
     <h4>Total Price: @TotalPrice.ToString("C2")</h4>
+    //If the user has no payment types active on their account, prompts them to add one
     if (Model.PaymentTypes == null)
     {
         <h4> You have no payment types! Please <a asp-controller="PaymentTypes" asp-action="Create">add one here</a> to continue!</h4>
     }
+    //Prints out the dropdown for payment types IF the user has an active payment type
     else
     {
         <div class="row">

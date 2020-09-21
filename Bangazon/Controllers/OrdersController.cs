@@ -121,9 +121,11 @@ namespace Bangazon.Controllers
         }
 
         // GET: Orders/Edit/5
+        //This Edit page is actually our Finalize Checkout page, where the user adds a payment type!
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
         {
+            //If no id is passed in, returns a Not Found page
             if (id == null)
             {
                 return NotFound();
@@ -132,6 +134,7 @@ namespace Bangazon.Controllers
             //Gets the current user
             ApplicationUser currentUser = await GetCurrentUserAsync();
 
+            //Finds the current open order, using the id that was passed in
             var order = await _context.Order
                                 .Include(o => o.PaymentType)
                                 .Include(o => o.User)
@@ -139,77 +142,120 @@ namespace Bangazon.Controllers
                                     .ThenInclude(op => op.Product)
                                 .Where(o => o.UserId == currentUser.Id)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
+
+            //If the order doesn't exist, returns a Not Found page
             if (order == null)
             {
                 return NotFound();
             }
 
+            //Creates a ViewModel to hold our order and payment types
             OrderEditViewModel model = new OrderEditViewModel();
             model.Order = order;
 
+            //fetches all active payment types attributed to the user
             List<PaymentType> paymentTypes = await _context.PaymentType
                                                 .Where(pt => pt.UserId == currentUser.Id && pt.Active == true)
                                                 .ToListAsync();
 
+            //If payment types exist, convert them to select list items and add them to the view model
             if (paymentTypes != null)
             {
                 model.PaymentTypes = new SelectList(paymentTypes, "PaymentTypeId", "Description", order.PaymentTypeId).ToList();
             }
 
+            //Pulls up our view for this order. If you look at the cshtml for this view, you'll note that, if no payment types were found, the user is given a link to add a new payment type!
             return View(model);
         }
 
         // POST: Orders/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for 
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        //This method updates/edits our order with the new PaymentType Id
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, OrderEditViewModel model)
         {
+            //If the passed-in id and the order id don't match, returns a not found page
             if (id != model.Order.OrderId)
             {
                 return NotFound();
             }
 
+            //We're removing all of this from ModelState so that the ModelState is valid. None of this data is included in our ViewModel parameter
             ModelState.Remove("Order.DateCompleted");
             ModelState.Remove("Order.OrderProducts");
             ModelState.Remove("Order.PaymentType");
             ModelState.Remove("Order.User");
 
+            //Fetches a list of all products in the order that we can loop through
             List<OrderProduct> productsInOrder = await _context.OrderProduct
                                                             .Include(op => op.Product)
                                                             .Where(op => op.OrderId == model.Order.OrderId)
                                                             .ToListAsync();
+            //Fetches a second list that the first list will be compared to. This one can be edited as we loop through the first one
+            List<OrderProduct> productsAfterRemoval = await _context.OrderProduct
+                                                            .Include(op => op.Product)
+                                                            .Where(op => op.OrderId == model.Order.OrderId)
+                                                            .ToListAsync();
 
-            List<Product> outOfStockProducts = new List<Product>();
+            //Gets the current user
+            ApplicationUser currentUser = await GetCurrentUserAsync();
 
+            //Loops through orders that START in our order. We're looking for duplicate items, and going to count them. This count will be subtracted from the total quantity available. If this puts the quanitity below 0, we're going to remove the product from our order.
             foreach (OrderProduct productInOrder in productsInOrder)
             {
-                if (outOfStockProducts.FirstOrDefault(product => product.ProductId == productInOrder.ProductId) != null)
+                int count = 0;
+                //Loops through our second, mirrored list to find products identical to the current product
+                foreach (OrderProduct otherProduct in productsAfterRemoval)
                 {
+                    if (otherProduct.ProductId == productInOrder.ProductId)
+                    {
+                        //iterate our count if the product ids match
+                        count++;
+                    }
+                }
 
-                    int count = 0;
-                    foreach (OrderProduct otherProduct in productsInOrder)
-                    {
-                        if (otherProduct.ProductId == productInOrder.ProductId)
-                        {
-                            count++;
-                        }
-                    }
-                    if (productInOrder.Product.Quantity - count < 0)
-                    {
-                        outOfStockProducts.Add(productInOrder.Product);
-                    }
+                //Grabs the current number of products that are on closed orders
+                List<OrderProduct> productsGone = await _context.OrderProduct
+                                    .Include(op => op.Order)
+                                    .Where(op => op.ProductId == productInOrder.ProductId)
+                                    .Where(op => op.Order.PaymentTypeId != null)
+                                    .ToListAsync();
+
+                //Subtracts the number of product gone from the total quantity
+                int currentQuantity = productInOrder.Product.Quantity - productsGone.Count();
+
+                //If the number of products the user is buying will drop the current quantity below 0....
+                if (currentQuantity - count < 0)
+                {
+                    //...add it to a list of removed products in our view model...
+                    model.outOfStockProducts.Add(productInOrder);
+                    //...remove the product from the order in the database...
+                    _context.OrderProduct.Remove(productInOrder);
+                    await _context.SaveChangesAsync();
+                    //...and remove it from our second list, so we have a proper, up-to-date look of what our final cart will look like.
+                    productsAfterRemoval.Remove(productInOrder);
                 }
             }
 
+            //By the time the above code runs, any items that would push the stock below 0 will be removed, and kept track of in the outOfStockProducts list on our view model. Our second list from before, productsAfterRemoval, is now an accurate view of what our cart looks like after those products are removed. productsInCart is an old, obsolete view -- it's what our cart looks like with those removed items still there. We couldn't remove them from the list WHILE we were iterating over it. C# doesn't like that.
+
+            //Runs if our ModelState is valid, which it should be since we removed properties from it
             if (ModelState.IsValid)
             {
                 try
                 {
-                    model.Order.DateCompleted = DateTime.Now;
-                    _context.Update(model.Order);
-                    await _context.SaveChangesAsync();
+                    //Only runs if our finalized cart actually has items in it!
+                    if (productsAfterRemoval.Count() > 0)
+                    {
+                        //If we still have items in our cart after removal, we're going to checkout. First, we set the date of completion to today
+                        model.Order.DateCompleted = DateTime.Now;
+
+                        //then we update the order in the database, which really just gives it a PaymentTypeId, making it a closed order
+                        _context.Update(model.Order);
+                        await _context.SaveChangesAsync();
+                    }
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -222,13 +268,11 @@ namespace Bangazon.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction("Index", "Products");
-            }
 
-            //Gets the current user
-            ApplicationUser currentUser = await GetCurrentUserAsync();
+                //All of the upcoming code will refresh our ViewModel with the finalized order, post-removal
 
-            var order = await _context.Order
+                //First we get the order again, with all its products...
+                Order order = await _context.Order
                                 .Include(o => o.PaymentType)
                                 .Include(o => o.User)
                                 .Include(o => o.OrderProducts)
@@ -236,17 +280,45 @@ namespace Bangazon.Controllers
                                 .Where(o => o.UserId == currentUser.Id)
                                 .FirstOrDefaultAsync(m => m.OrderId == id);
 
-            model.Order = order;
+                model.Order = order;
 
-            List<PaymentType> paymentTypes = await _context.PaymentType
+                //...Then we get all the PaymentTypes again, just to fill out the PaymentType...
+                List<PaymentType> paymentTypes = await _context.PaymentType
+                                                    .Where(pt => pt.UserId == currentUser.Id && pt.Active == true)
+                                                    .ToListAsync();
+
+                //...and turn them into SelectListItems
+                if (paymentTypes != null)
+                {
+                    model.PaymentTypes = new SelectList(paymentTypes, "PaymentTypeId", "Description", model.Order.PaymentTypeId).ToList();
+                }
+
+                //Sends us to our CheckedOut view
+                return View("CheckedOut", model);
+            }
+
+            //This all refreshes the ViewModel so we can refresh the page if checking out FAILS
+
+            Order failedOrder = await _context.Order
+                                .Include(o => o.PaymentType)
+                                .Include(o => o.User)
+                                .Include(o => o.OrderProducts)
+                                    .ThenInclude(op => op.Product)
+                                .Where(o => o.UserId == currentUser.Id)
+                                .FirstOrDefaultAsync(m => m.OrderId == id);
+
+            model.Order = failedOrder;
+
+            List<PaymentType> failedPaymentTypes = await _context.PaymentType
                                                 .Where(pt => pt.UserId == currentUser.Id && pt.Active == true)
                                                 .ToListAsync();
 
-            if (paymentTypes != null)
+            if (failedPaymentTypes != null)
             {
-                model.PaymentTypes = new SelectList(paymentTypes, "PaymentTypeId", "Description", model.Order.PaymentTypeId).ToList();
+                model.PaymentTypes = new SelectList(failedPaymentTypes, "PaymentTypeId", "Description", model.Order.PaymentTypeId).ToList();
             }
 
+            //Refreshes the page with the same ViewModel if checking out fails
             return View(model);
         }
 

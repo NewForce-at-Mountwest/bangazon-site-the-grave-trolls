@@ -10,5 +10,6 @@ namespace Bangazon.Models.OrderViewModels
     {
         public Order Order { get; set; }
         public List<SelectListItem> PaymentTypes { get; set; } = new List<SelectListItem>();
+        public List<OrderProduct> outOfStockProducts { get; set; } = new List<OrderProduct>();
     }
 }
